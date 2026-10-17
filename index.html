@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RYZ Deploy Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#e0e5ec;--l:#ffffff;--d:#a3b1c6;--t:#3d4852;--m:#7b8794;--a:#6c5ce7;--a2:#00cec9}
+[data-theme=dark]{--bg:#2a2f38;--l:#363c48;--d:#1b1f25;--t:#e6e9ef;--m:#8b94a3}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t);font:500 15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding:22px 16px 70px;transition:background .4s,color .4s;overflow-x:hidden}
+body:before,body:after{content:"";position:fixed;width:320px;height:320px;border-radius:50%;filter:blur(90px);opacity:.35;z-index:-1;animation:drift 14s ease-in-out infinite alternate}
+body:before{background:var(--a);top:-80px;left:-90px}
+body:after{background:var(--a2);bottom:-100px;right:-90px;animation-delay:-7s}
+@keyframes drift{to{transform:translate(60px,40px) scale(1.2)}}
+.wrap{max-width:720px;margin:auto;display:grid;gap:24px}
+.raise{background:var(--bg);border-radius:28px;box-shadow:14px 14px 28px var(--d),-14px -14px 28px var(--l),inset 1px 1px 2px rgba(255,255,255,.2);transition:box-shadow .3s}
+.sink{background:var(--bg);border-radius:18px;box-shadow:inset 7px 7px 14px var(--d),inset -7px -7px 14px var(--l)}
+.card{padding:24px;display:grid;gap:16px}
+header{display:flex;align-items:center;gap:16px;padding:18px 22px}
+.logo{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--bg);box-shadow:8px 8px 16px var(--d),-8px -8px 16px var(--l),inset 3px 3px 6px var(--l),inset -3px -3px 6px var(--d);animation:fl 4s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-5px)}}
+.logo svg{width:28px;height:28px}
+h1{font-size:22px;letter-spacing:.4px;background:linear-gradient(120deg,var(--a),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+header p{color:var(--m);font-size:13px}
+.grow{flex:1}
+.sw{width:64px;height:32px;border-radius:20px;border:0;cursor:pointer;position:relative;background:var(--bg);box-shadow:inset 4px 4px 8px var(--d),inset -4px -4px 8px var(--l)}
+.sw:after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--a2));box-shadow:0 0 12px rgba(108,92,231,.6);transition:transform .35s cubic-bezier(.6,-.4,.3,1.4)}
+[data-theme=dark] .sw:after{transform:translateX(32px)}
+.btn{border:0;cursor:pointer;color:var(--t);background:var(--bg);border-radius:16px;padding:12px 16px;font:inherit;font-weight:700;box-shadow:7px 7px 14px var(--d),-7px -7px 14px var(--l);position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .55s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,color .35s ease,background .5s ease,opacity .3s;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn:hover{transform:translateY(-3px);box-shadow:9px 9px 18px var(--d),-9px -9px 18px var(--l)}
+.btn:active,.btn.on{box-shadow:inset 5px 5px 10px var(--d),inset -5px -5px 10px var(--l)}.btn:active{transform:scale(.94)}.btn.on:hover{transform:none}.btn.on:active{transform:scale(.96)}
+.btn.on{color:var(--a)}
+.btn:disabled{opacity:.5;pointer-events:none}
+.go{background-size:200% 100%;animation:sh 5s ease-in-out infinite alternate;width:100%;padding:17px;font-size:16px;color:#fff;background:linear-gradient(135deg,var(--a),var(--a2));box-shadow:8px 8px 18px var(--d),-8px -8px 18px var(--l),0 0 26px rgba(108,92,231,.5)}
+.go:active{box-shadow:inset 4px 4px 10px rgba(0,0,0,.35),0 0 12px rgba(108,92,231,.4)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{font-size:12px;font-weight:700;color:var(--m);letter-spacing:.8px;text-transform:uppercase;display:grid;gap:8px}
+input[type=text],input[type=password],input[type=url]{width:100%;border:0;outline:0;padding:15px 17px;border-radius:16px;background:var(--bg);color:var(--t);font:inherit;box-shadow:inset 6px 6px 12px var(--d),inset -6px -6px 12px var(--l);transition:.25s}
+input:focus{box-shadow:inset 6px 6px 12px var(--d),inset -6px -6px 12px var(--l),0 0 0 2px var(--a),0 0 18px rgba(108,92,231,.35)}
+.hint{font-size:12px;color:var(--m);text-transform:none;letter-spacing:0;font-weight:500;word-break:break-all}
+.dz{padding:30px 18px;text-align:center;cursor:pointer;display:grid;gap:8px;justify-items:center;transition:transform .6s cubic-bezier(.34,1.56,.64,1),box-shadow .5s ease}
+.dz.drag{box-shadow:inset 7px 7px 14px var(--d),inset -7px -7px 14px var(--l),0 0 0 2px var(--a2),0 0 30px rgba(0,206,201,.4)}
+.dz b{font-size:17px}
+.dz small{color:var(--m)}
+.dz .ic{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;box-shadow:6px 6px 12px var(--d),-6px -6px 12px var(--l)}
+.ico{display:flex;align-items:center;gap:16px}
+.ico img{width:72px;height:72px;border-radius:20px;object-fit:cover;box-shadow:7px 7px 14px var(--d),-7px -7px 14px var(--l);background:var(--bg)}
+.bar{height:18px;padding:4px}
+.bar i{display:block;height:100%;width:0;border-radius:10px;background:linear-gradient(90deg,var(--a),var(--a2));box-shadow:0 0 12px rgba(0,206,201,.7);transition:width .9s cubic-bezier(.22,1,.36,1)}
+.log{padding:14px;font:12px/1.7 ui-monospace,Menlo,Consolas,monospace;max-height:190px;overflow:auto;white-space:pre-wrap;color:var(--m)}
+.led{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--a2);box-shadow:0 0 10px var(--a2);animation:pl 1.4s infinite;margin-right:8px}
+@keyframes pl{50%{opacity:.3}}
+.res{padding:18px;display:grid;gap:12px}
+.res a.u{color:var(--a);font-weight:800;word-break:break-all;text-decoration:none;font-size:17px}
+.acts{display:flex;gap:12px;flex-wrap:wrap}
+.btn .rp{position:absolute;border-radius:50%;background:rgba(108,92,231,.3);transform:scale(0);opacity:1;animation:rip .8s cubic-bezier(.22,1,.36,1) forwards;pointer-events:none}
+.go .rp{background:rgba(255,255,255,.5)}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+@keyframes sh{to{background-position:100% 0}}
+@keyframes pop{from{opacity:0;transform:translateY(22px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes pulse{40%{transform:scale(1.04)}}
+.raise,.sink{transition:background .5s ease,box-shadow .5s ease,transform .6s cubic-bezier(.34,1.56,.64,1)}
+.wrap>*:not([hidden]){animation:pop .8s cubic-bezier(.22,1,.36,1) backwards}
+.wrap>*:nth-child(2){animation-delay:.08s}.wrap>*:nth-child(3){animation-delay:.16s}.wrap>*:nth-child(4){animation-delay:.24s}.wrap>*:nth-child(5){animation-delay:.32s}.wrap>*:nth-child(6){animation-delay:.4s}
+.card:not([hidden]) label{animation:pop .7s cubic-bezier(.22,1,.36,1) backwards}
+.card label:nth-of-type(2){animation-delay:.08s}.card label:nth-of-type(3){animation-delay:.16s}
+.dz:hover{transform:translateY(-4px)}
+.dz:active{transform:scale(.97)}
+.dz.drag{transform:scale(1.03)}
+.dz .ic{transition:transform .6s cubic-bezier(.34,1.56,.64,1)}
+.dz:hover .ic{transform:scale(1.15) rotate(-6deg)}
+input:focus{transform:translateY(-2px)}
+.res:not([hidden]){animation:pop .7s cubic-bezier(.34,1.56,.64,1)}
+#pv{display:block;transition:color .4s}
+label .btn{justify-self:start;text-transform:none;letter-spacing:0;font-size:14px}
+.nl{padding:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.foot{text-align:center;color:var(--m);font-size:13px;letter-spacing:.6px;display:grid;gap:10px}
+.foot p:last-child{min-height:26px}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition-duration:.01ms!important}}
+[hidden]{display:none!important}
+@media(max-width:520px){.row .btn{padding:12px 6px}.row2{grid-template-columns:1fr}h1{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="raise">
+<div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#6c5ce7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg></div>
+<div class="grow"><h1>RYZ Deploy Studio</h1><p>HTML atau ZIP jadi website dan APK</p></div>
+<button class="sw" id="th" aria-label="Tema"></button>
+</header>
+
+<section class="raise card">
+<div class="dz sink" id="dz">
+<div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00cec9" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 20h16"/></svg></div>
+<b id="dzt">Seret file .html atau .zip ke sini</b>
+<small id="dzs">atau ketuk untuk memilih file</small>
+<input type="file" id="fi" accept=".html,.htm,.zip" hidden>
+</div>
+</section>
+
+<div class="raise tabs">
+<button class="btn on" data-tab="dep">Deploy Website</button>
+<button class="btn" data-tab="apk">Buat APK</button>
+</div>
+
+<section class="raise card" id="dep">
+<div class="row">
+<button class="btn on" data-p="netlify">Netlify</button>
+<button class="btn" data-p="github">GitHub</button>
+<button class="btn" data-p="vercel">Vercel</button>
+</div>
+<label>Nama website
+<input type="text" id="nm" placeholder="nama-website" autocomplete="off">
+<span class="hint" id="pv"></span>
+</label>
+<label id="tkl">Token akses
+<input type="password" id="tk" placeholder="Tempel token" autocomplete="off">
+<span class="hint" id="hn"></span>
+<a class="btn" id="tl" href="#" target="_blank" rel="noopener">Buat token otomatis</a>
+</label>
+<div class="sink nl" id="nl" hidden>
+<button class="btn" id="nb"></button>
+<span class="hint" id="ns"></span>
+</div>
+<label id="pxl" hidden>Proxy CORS (opsional)
+<input type="url" id="px" placeholder="https://proxy-anda.example/">
+<span class="hint">Vercel biasanya menolak permintaan langsung dari browser. Isi alamat proxy jika gagal.</span>
+</label>
+<button class="btn go" id="gd">Deploy Sekarang</button>
+</section>
+
+<section class="raise card" id="apk" hidden>
+<div class="row2">
+<button class="btn on" data-s="link">Dari Link Website</button>
+<button class="btn" data-s="file">Dari File Terpilih</button>
+</div>
+<label id="ull">Link website
+<input type="url" id="ul" placeholder="https://nama.netlify.app">
+</label>
+<label>Nama aplikasi
+<input type="text" id="an" placeholder="Nama Aplikasi" autocomplete="off">
+</label>
+<div class="ico">
+<img id="ip" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Crect width='72' height='72' fill='%23e0e5ec'/%3E%3Ctext x='36' y='46' font-size='30' text-anchor='middle' fill='%236c5ce7'%3E%2B%3C/text%3E%3C/svg%3E">
+<div><button class="btn" id="ib">Pilih Ikon Aplikasi</button><div class="hint" style="margin-top:8px">Gambar persegi, disesuaikan 1024 x 1024</div></div>
+<input type="file" id="ic" accept="image/*" hidden>
+</div>
+<label>Token GitHub
+<input type="password" id="gt" placeholder="Tempel token" autocomplete="off">
+<span class="hint">Token klasik dengan scope repo dan workflow. APK dibangun otomatis oleh GitHub Actions di repo publik milikmu.</span>
+<a class="btn" href="https://github.com/settings/tokens/new?scopes=repo,workflow&amp;description=RYZ%20Deploy%20Studio" target="_blank" rel="noopener">Buat token GitHub otomatis</a>
+</label>
+<label>Nama repo
+<input type="text" id="rp" placeholder="nama-aplikasi-apk" autocomplete="off">
+</label>
+<button class="btn go" id="ga">Bangun APK</button>
+</section>
+
+<section class="raise card">
+<div class="bar sink"><i id="pb"></i></div>
+<div class="log sink" id="lg"></div>
+<div class="res sink" id="rs" hidden>
+<a class="u" id="ru" href="#" target="_blank" rel="noopener"></a>
+<div class="acts"><button class="btn" id="cp">Salin Link</button><a class="btn" id="ro" href="#" target="_blank" rel="noopener">Buka</a></div>
+</div>
+</section>
+<footer class="foot"><p>Copyright © 2026 RYZ</p><p></p></footer>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const NETLIFY_CLIENT_ID='ZfOZrgDDzqZQRFPF5jV6JiO4a-UNulDUYKJgIb0_J28';
+let files=[],plat='netlify',src='link',icon=null,busy=false,ntk='';
+try{ntk=localStorage.getItem('ryz_nt')||''}catch(e){}
+const oauth=()=>plat==='netlify'&&!!NETLIFY_CLIENT_ID;
+function saveTk(t){ntk=t;try{t?localStorage.setItem('ryz_nt',t):localStorage.removeItem('ryz_nt')}catch(e){}}
+function readHash(){
+const h=new URLSearchParams(location.hash.slice(1)),t=h.get('access_token');
+if(!t)return;
+let ok=true;
+try{ok=h.get('state')===sessionStorage.getItem('ryz_st')}catch(e){}
+if(ok)saveTk(t);
+history.replaceState(null,'',location.pathname+location.search)
+}
+function login(){
+if(location.protocol==='file:')return log('Masuk Netlify butuh halaman yang sudah di-hosting, bukan file lokal');
+const st=Math.random().toString(36).slice(2)+Date.now().toString(36);
+try{sessionStorage.setItem('ryz_st',st)}catch(e){}
+location.href='https://app.netlify.com/authorize?client_id='+encodeURIComponent(NETLIFY_CLIENT_ID)+'&response_type=token&redirect_uri='+encodeURIComponent(location.origin+location.pathname)+'&state='+st
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const slug=s=>s.toLowerCase().replace(/\.[a-z]+$/,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50);
+const enc=new TextEncoder();
+const T=s=>enc.encode(s);
+const b64=u=>{let s='';for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(s)};
+const links={netlify:'https://app.netlify.com/user/applications#personal-access-tokens',github:'https://github.com/settings/tokens/new?scopes=repo,workflow&description=RYZ%20Deploy%20Studio',vercel:'https://vercel.com/account/tokens'};
+const hints={netlify:'Netlify: User settings, Applications, Personal access tokens.',github:'GitHub: Settings, Developer settings, token klasik dengan scope repo dan workflow.',vercel:'Vercel: Account Settings, Tokens.'};
+
+function log(m,p){const l=$('#lg');l.textContent+=(l.textContent?'\n':'')+m;l.scrollTop=l.scrollHeight;if(p!=null)$('#pb').style.width=p+'%'}
+function lock(v){busy=v;$('#gd').disabled=v;$('#ga').disabled=v}
+function reset(){$('#lg').textContent='';$('#pb').style.width='0';$('#rs').hidden=true}
+function done(u){$('#rs').hidden=false;$('#ru').textContent=u;$('#ru').href=u;$('#ro').href=u;$('#pb').style.width='100%';log('Selesai',100)}
+function fail(e){const m=e instanceof TypeError?'Permintaan diblokir atau tidak ada koneksi. Periksa internet, token, atau gunakan proxy.':e.message;log('Gagal: '+m,0)}
+
+async function api(u,o){
+const r=await fetch(u,o),t=await r.text();let j;
+try{j=JSON.parse(t)}catch(x){j=t}
+if(!r.ok){const e=new Error((j&&(j.message||(j.error&&j.error.message)))||String(t).slice(0,160)||('HTTP '+r.status));e.status=r.status;throw e}
+return j
+}
+
+async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:n},async()=>{while(i<items.length){const x=items[i++];await fn(x)}}))}
+
+let entryNote='index.html';
+const dec=new TextDecoder();
+function rank(p){
+const parts=p.split('/'),b=parts.pop().toLowerCase().replace(/\.html?$/,''),k=['index','home','main','default','app','start','beranda'].indexOf(b);
+return [parts.length,k<0?99:k,p]
+}
+function cmp(x,y){
+const a=rank(x.path),b=rank(y.path);
+return a[0]-b[0]||a[1]-b[1]||(a[2]<b[2]?-1:1)
+}
+function fixIndex(out){
+const htmls=out.filter(x=>/\.html?$/i.test(x.path));
+if(!htmls.length)throw new Error('Tidak ada file HTML di dalam ZIP');
+const exact=out.find(x=>x.path==='index.html');
+if(exact){entryNote='index.html';return out}
+const loose=out.find(x=>/^index\.html?$/i.test(x.path));
+if(loose){entryNote=loose.path+' diubah menjadi index.html';loose.path='index.html';return out}
+const best=[...htmls].sort(cmp)[0];
+const dir=best.path.includes('/')?best.path.slice(0,best.path.lastIndexOf('/')+1):'';
+let data=best.data;
+if(dir){
+let h=dec.decode(best.data);
+const tag='<base href="'+dir+'">';
+h=/<head[^>]*>/i.test(h)?h.replace(/<head[^>]*>/i,m=>m+tag):tag+h;
+data=enc.encode(h)
+}
+out.push({path:'index.html',data});
+entryNote=best.path+' dijadikan index.html';
+return out
+}
+async function readFile(f){
+const out=[];
+if(/\.zip$/i.test(f.name)){
+const z=await JSZip.loadAsync(f);
+const names=Object.keys(z.files).filter(n=>!z.files[n].dir&&!/(^|\/)(__MACOSX|\.DS_Store)/.test(n));
+const parts=names.map(n=>n.split('/'));
+let cut=0;
+while(parts.length&&parts.every(p=>p.length>cut+1&&p[cut]===parts[0][cut]))cut++;
+for(const n of names)out.push({path:n.split('/').slice(cut).join('/'),data:await z.files[n].async('uint8array')});
+return fixIndex(out)
+}
+if(!/\.html?$/i.test(f.name))throw new Error('Hanya file .html, .htm, atau .zip');
+out.push({path:'index.html',data:new Uint8Array(await f.arrayBuffer())});
+entryNote=f.name+' diubah menjadi index.html';
+return out
+}
+
+async function toZip(list){const z=new JSZip();list.forEach(f=>z.file(f.path,f.data));return z.generateAsync({type:'blob',compression:'DEFLATE'})}
+
+async function pick(f){
+if(!f)return;
+$('#dzt').textContent='Membaca '+f.name;
+try{
+files=await readFile(f);
+$('#dzt').textContent=f.name;
+$('#dzs').textContent=files.length+' file siap, halaman utama: '+entryNote;
+if(!$('#nm').value)$('#nm').value=slug(f.name)==='index'?'':slug(f.name);
+if(!$('#an').value)$('#an').value=slug(f.name)==='index'?'':f.name.replace(/\.[a-z]+$/i,'');
+sync()
+}catch(e){files=[];$('#dzt').textContent='File tidak bisa dibaca';$('#dzs').textContent=e.message}
+}
+
+function sync(){
+const s=slug($('#nm').value)||'nama-website';
+$('#pv').textContent=plat==='netlify'?'https://'+s+'.netlify.app':plat==='vercel'?'https://'+s+'.vercel.app':'https://akun-anda.github.io/'+s+'/';
+$('#hn').textContent=hints[plat];
+$('#tl').href=links[plat];
+$('#pxl').hidden=plat!=='vercel';
+$('#tkl').hidden=oauth();
+$('#nl').hidden=!oauth();
+if(oauth()){$('#nb').textContent=ntk?'Keluar dari Netlify':'Masuk dengan Netlify';$('#ns').textContent=ntk?'Terhubung, langsung deploy tanpa isi token':'Klik sekali, tanpa menyalin token. Redirect URI untuk didaftarkan di Netlify: '+location.origin+location.pathname}
+$('#ull').hidden=src!=='link';
+if(!$('#rp').dataset.t)$('#rp').placeholder=(slug($('#an').value)||'nama-aplikasi')+'-apk'
+}
+
+async function netlify(name,token,list){
+const H={Authorization:'Bearer '+token},B='https://api.netlify.com/api/v1';
+log('Menyiapkan situs '+name,15);
+let site;
+try{site=await api(B+'/sites',{method:'POST',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({name})})}
+catch(e){
+if(e.status!==422)throw e;
+const ls=await api(B+'/sites?filter=all&name='+encodeURIComponent(name),{headers:H});
+site=ls.find(s=>s.name===name);
+if(!site)throw new Error('Nama '+name+' sudah dipakai, coba nama lain');
+log('Situs sudah ada, diperbarui',25)
+}
+log('Mengunggah '+list.length+' file',45);
+let d=await api(B+'/sites/'+site.id+'/deploys',{method:'POST',headers:{...H,'Content-Type':'application/zip'},body:await toZip(list)});
+for(let i=0;i<45&&d.state!=='ready';i++){
+if(d.state==='error')throw new Error(d.error_message||'Deploy gagal');
+await sleep(2000);
+d=await api(B+'/deploys/'+d.id,{headers:H});
+log('Status: '+d.state,60+Math.min(i,30))
+}
+return site.ssl_url||site.url||'https://'+name+'.netlify.app'
+}
+
+async function vercel(name,token,list,px){
+const H={Authorization:'Bearer '+token,'Content-Type':'application/json'},B=(px||'')+'https://api.vercel.com';
+log('Mengirim '+list.length+' file',40);
+const body={name,target:'production',projectSettings:{framework:null},files:list.map(f=>({file:f.path,data:b64(f.data),encoding:'base64'}))};
+let d=await api(B+'/v13/deployments?skipAutoDetectionConfirmation=1',{method:'POST',headers:H,body:JSON.stringify(body)});
+for(let i=0;i<45&&d.readyState!=='READY';i++){
+if(d.readyState==='ERROR'||d.readyState==='CANCELED')throw new Error('Deploy gagal di Vercel');
+await sleep(2500);
+d=await api(B+'/v13/deployments/'+d.id,{headers:H});
+log('Status: '+d.readyState,60+Math.min(i,30))
+}
+return 'https://'+name+'.vercel.app'
+}
+
+const gh=token=>(p,m,b)=>api('https://api.github.com'+p,{method:m||'GET',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});
+
+async function pushRepo(g,repo,list,msg){
+const me=await g('/user');
+log('Akun: '+me.login,10);
+let r;
+try{r=await g('/user/repos','POST',{name:repo,auto_init:true,private:false})}
+catch(e){if(e.status!==422)throw e;r=await g('/repos/'+me.login+'/'+repo);log('Repo sudah ada, diperbarui',15)}
+const br=r.default_branch||'main',base='/repos/'+me.login+'/'+repo;
+await sleep(1500);
+const ref=await g(base+'/git/ref/heads/'+br);
+const cm=await g(base+'/git/commits/'+ref.object.sha);
+const tree=[];let n=0;
+await pool(list,4,async f=>{
+const b=await g(base+'/git/blobs','POST',{content:b64(f.data),encoding:'base64'});
+tree.push({path:f.path,mode:'100644',type:'blob',sha:b.sha});
+n++;log('Unggah '+n+'/'+list.length,15+Math.round(n/list.length*50))
+});
+const t=await g(base+'/git/trees','POST',{base_tree:cm.tree.sha,tree});
+const c=await g(base+'/git/commits','POST',{message:msg,tree:t.sha,parents:[ref.object.sha]});
+await g(base+'/git/refs/heads/'+br,'PATCH',{sha:c.sha,force:true});
+return {login:me.login,branch:br,sha:c.sha,base}
+}
+
+async function github(name,token,list){
+const g=gh(token);
+const o=await pushRepo(g,name,list,'Deploy dari RYZ Deploy Studio');
+log('Mengaktifkan GitHub Pages',80);
+try{await g(o.base+'/pages','POST',{source:{branch:o.branch,path:'/'}})}catch(e){}
+return name.toLowerCase()===(o.login+'.github.io').toLowerCase()?'https://'+o.login+'.github.io/':'https://'+o.login+'.github.io/'+name+'/'
+}
+
+async function deploy(){
+if(busy)return;
+reset();
+const name=slug($('#nm').value),token=oauth()?ntk:$('#tk').value.trim();
+if(!files.length)return log('Pilih file .html atau .zip dulu');
+if(!name)return log('Isi nama website');
+if(!token)return log(oauth()?'Tekan Masuk dengan Netlify dulu':'Isi token akses');
+lock(true);
+try{
+log('Mulai deploy ke '+plat,5);
+const u=plat==='netlify'?await netlify(name,token,files):plat==='vercel'?await vercel(name,token,files,$('#px').value.trim()):await github(name,token,files);
+$('#ul').value=u;
+done(u)
+}catch(e){if(e.status===401&&oauth()){saveTk('');sync();log('Sesi Netlify habis, silakan masuk lagi')}else fail(e)}
+lock(false)
+}
+
+function workflow(){
+return ['name: build-apk','on:','  push:','  workflow_dispatch:','permissions:','  contents: write','jobs:','  build:','    runs-on: ubuntu-latest','    steps:','      - uses: actions/checkout@v4','      - uses: actions/setup-node@v4','        with:','          node-version: 20','      - uses: actions/setup-java@v4','        with:','          distribution: temurin','          java-version: 17','      - run: npm install','      - run: npx cap add android','      - run: |','          if [ -f assets/icon-only.png ]; then npx capacitor-assets generate --android --iconBackgroundColor "#ffffff" --iconBackgroundColorDark "#ffffff"; fi','      - run: npx cap sync android','      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug','      - env:','          GH_TOKEN: ${{ github.token }}','        run: gh release create "v${{ github.run_number }}" android/app/build/outputs/apk/debug/app-debug.apk --title "Build ${{ github.run_number }}" --notes "APK debug"',''].join('\n')
+}
+
+async function buildApk(){
+if(busy)return;
+reset();
+const token=$('#gt').value.trim(),name=$('#an').value.trim(),url=$('#ul').value.trim();
+const repo=slug($('#rp').value)||(slug(name)+'-apk');
+if(!name)return log('Isi nama aplikasi');
+if(!token)return log('Isi token GitHub');
+if(src==='link'&&!/^https:\/\//.test(url))return log('Isi link website yang diawali https://');
+if(src==='file'&&!files.length)return log('Pilih file .html atau .zip dulu');
+lock(true);
+try{
+const cfg={appId:'com.ryz.a'+(slug(name).replace(/-/g,'')||'app'),appName:name,webDir:'www'};
+if(src==='link')cfg.server={url,androidScheme:'https'};
+const pkg={name:slug(name)||'app',version:'1.0.0',private:true,dependencies:{'@capacitor/core':'^6.2.0','@capacitor/android':'^6.2.0'},devDependencies:{'@capacitor/cli':'^6.2.0','@capacitor/assets':'^3.0.5'}};
+const list=[
+{path:'package.json',data:T(JSON.stringify(pkg,null,2))},
+{path:'capacitor.config.json',data:T(JSON.stringify(cfg,null,2))},
+{path:'.gitignore',data:T('node_modules\nandroid\n')},
+{path:'.github/workflows/apk.yml',data:T(workflow())}
+];
+if(src==='link')list.push({path:'www/index.html',data:T('<!doctype html><meta charset="utf-8"><title>'+name.replace(/</g,'')+'</title>')});
+else files.forEach(f=>list.push({path:'www/'+f.path,data:f.data}));
+if(icon){list.push({path:'assets/icon-only.png',data:icon});list.push({path:'assets/icon-foreground.png',data:icon})}
+log('Menyiapkan proyek APK '+name,5);
+const g=gh(token);
+const o=await pushRepo(g,repo,list,'Bangun APK '+name);
+log('Menunggu GitHub Actions membangun APK',70);
+await sleep(8000);
+for(let i=0;i<120;i++){
+const rs=await g(o.base+'/actions/runs?head_sha='+o.sha);
+const run=rs.workflow_runs&&rs.workflow_runs[0];
+if(run){
+log('Status build: '+run.status,Math.min(70+i,97));
+if(run.status==='completed'){
+if(run.conclusion!=='success')throw new Error('Build gagal, lihat '+run.html_url);
+const rel=await g(o.base+'/releases/latest');
+const a=rel.assets&&rel.assets[0];
+return done(a?a.browser_download_url:rel.html_url)
+}
+}
+await sleep(10000)
+}
+throw new Error('Build terlalu lama, cek tab Actions di repo '+repo)
+}catch(e){fail(e)}
+finally{lock(false)}
+}
+
+$('#dz').onclick=()=>$('#fi').click();
+$('#fi').onchange=e=>pick(e.target.files[0]);
+['dragover','dragenter'].forEach(v=>$('#dz').addEventListener(v,e=>{e.preventDefault();$('#dz').classList.add('drag')}));
+['dragleave','drop'].forEach(v=>$('#dz').addEventListener(v,e=>{e.preventDefault();$('#dz').classList.remove('drag')}));
+$('#dz').addEventListener('drop',e=>pick(e.dataTransfer.files[0]));
+$$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.classList.toggle('on',x===b));$('#dep').hidden=b.dataset.tab!=='dep';$('#apk').hidden=b.dataset.tab!=='apk'});
+$$('[data-p]').forEach(b=>b.onclick=()=>{plat=b.dataset.p;$$('[data-p]').forEach(x=>x.classList.toggle('on',x===b));sync()});
+$$('[data-s]').forEach(b=>b.onclick=()=>{src=b.dataset.s;$$('[data-s]').forEach(x=>x.classList.toggle('on',x===b));sync()});
+$('#nm').oninput=sync;
+$('#an').oninput=sync;
+$('#rp').oninput=()=>{$('#rp').dataset.t=$('#rp').value?'1':''};
+$('#ib').onclick=()=>$('#ic').click();
+$('#ic').onchange=async e=>{
+const f=e.target.files[0];if(!f)return;
+const im=await createImageBitmap(f),c=document.createElement('canvas');
+c.width=c.height=1024;
+const s=Math.min(im.width,im.height);
+c.getContext('2d').drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,1024,1024);
+const u=c.toDataURL('image/png');
+$('#ip').src=u;
+icon=Uint8Array.from(atob(u.split(',')[1]),ch=>ch.charCodeAt(0))
+};
+$('#nb').onclick=()=>{if(ntk){saveTk('');sync()}else login()};
+$('#gd').onclick=deploy;
+$('#ga').onclick=buildApk;
+$('#cp').onclick=async()=>{try{await navigator.clipboard.writeText($('#ru').textContent);$('#cp').textContent='Tersalin'}catch(e){}setTimeout(()=>$('#cp').textContent='Salin Link',1600)};
+$('#th').onclick=()=>{const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'};
+document.addEventListener('pointerdown',e=>{
+const b=e.target.closest('.btn');
+if(!b||b.disabled)return;
+const q=b.getBoundingClientRect(),z=Math.max(q.width,q.height)*2.4,i=document.createElement('span');
+i.className='rp';
+i.style.cssText='width:'+z+'px;height:'+z+'px;left:'+(e.clientX-q.left-z/2)+'px;top:'+(e.clientY-q.top-z/2)+'px';
+b.appendChild(i);
+setTimeout(()=>i.remove(),850)
+});
+readHash();
+sync();
+</script>
+</body>
+</html>
